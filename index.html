@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Comic Story Creator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="script.js" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    /* Local font declarations as fallback */
+    @font-face {
+      font-family: 'Bangers';
+      src: local('Bangers'), local('Bangers-Regular'), 
+           url('https://fonts.gstatic.com/s/bangers/v20/FeVQS0BTqb0h60ACL5la2Q.woff2') format('woff2');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Creepster';
+      src: local('Creepster'), local('Creepster-Regular'),
+           url('https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdXf4.woff2') format('woff2');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Bungee';
+      src: local('Bungee'), local('Bungee-Regular'),
+           url('https://fonts.gstatic.com/s/bungee/v9/N0bU2SZBIuF2PU_ECn50Kw.woff2') format('woff2');
+      font-display: swap;
+    }
+    
+    .comic-panel {
+      transition: all 0.3s ease;
+    }
+    .comic-panel:hover {
+      transform: scale(1.02);
+      box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4);
+    }
+    .loading-spinner {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Retro Comic Styles */
+    .comic-bg {
+      background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 25%, #45B7D1 50%, #96CEB4 75%, #FFEAA7 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+    
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    .comic-title {
+      font-family: 'Bangers', cursive;
+      text-shadow: 4px 4px 0px #FF1744, 8px 8px 0px #1976D2;
+      transform: rotate(-2deg);
+    }
+    
+    .comic-subtitle {
+      font-family: 'Bungee', cursive;
+      color: #2C3E50;
+      text-shadow: 2px 2px 0px #F39C12;
+    }
+    
+    .comic-form {
+      background: #FFFDE7;
+      border: 6px solid #FF5722;
+      border-radius: 20px;
+      box-shadow: 0 0 0 4px #FFC107, 0 0 0 8px #FF5722, 0 20px 40px rgba(0,0,0,0.3);
+      transform: rotate(1deg);
+      position: relative;
+    }
+    
+    .comic-form::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      background: repeating-linear-gradient(
+        45deg,
+        #FF5722,
+        #FF5722 10px,
+        #FFC107 10px,
+        #FFC107 20px
+      );
+      border-radius: 25px;
+      z-index: -1;
+    }
+    
+    .comic-button {
+      font-family: 'Bangers', cursive;
+      background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+      border: 4px solid #2C3E50;
+      border-radius: 15px;
+      text-shadow: 2px 2px 0px #2C3E50;
+      box-shadow: 0 6px 0 #2C3E50, 0 12px 20px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+      transition: all 0.2s ease;
+    }
+    
+    .comic-button:hover {
+      transform: translateY(0px);
+      box-shadow: 0 4px 0 #2C3E50, 0 8px 15px rgba(0,0,0,0.3);
+    }
+    
+    .comic-button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #2C3E50, 0 4px 10px rgba(0,0,0,0.3);
+    }
+    
+    .comic-input {
+      border: 3px solid #FF5722;
+      border-radius: 10px;
+      background: #FFF9C4;
+      font-family: 'Comic Sans MS', cursive;
+      transition: all 0.3s ease;
+    }
+    
+    .comic-input:focus {
+      border-color: #4ECDC4;
+      background: #E8F5E8;
+      box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.3);
+      outline: none;
+    }
+    
+    .comic-label {
+      font-family: 'Bangers', cursive;
+      color: #2C3E50;
+      text-shadow: 1px 1px 0px #FFC107;
+    }
+    
+    .comic-container {
+      background: #F8F8F8;
+      border: 6px solid #9C27B0;
+      border-radius: 20px;
+      box-shadow: 0 0 0 4px #E91E63, 0 0 0 8px #9C27B0, 0 20px 40px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    
+    .comic-container::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      background: repeating-linear-gradient(
+        -45deg,
+        #9C27B0,
+        #9C27B0 10px,
+        #E91E63 10px,
+        #E91E63 20px
+      );
+      border-radius: 25px;
+      z-index: -1;
+    }
+    
+    .comic-speech-bubble {
+      position: relative;
+      background: #FFFFFF;
+      border: 3px solid #2C3E50;
+      border-radius: 20px;
+      padding: 15px;
+      font-family: 'Comic Sans MS', cursive;
+      box-shadow: 0 4px 0 #2C3E50;
+    }
+    
+    .comic-speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -15px;
+      left: 30px;
+      width: 0;
+      height: 0;
+      border: 15px solid transparent;
+      border-top-color: #FFFFFF;
+      border-bottom: 0;
+      margin-left: -15px;
+      margin-bottom: -3px;
+    }
+    
+    .comic-speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: -18px;
+      left: 30px;
+      width: 0;
+      height: 0;
+      border: 15px solid transparent;
+      border-top-color: #2C3E50;
+      border-bottom: 0;
+      margin-left: -15px;
+    }
+    
+    .comic-dots {
+      background-image: radial-gradient(circle, #FF5722 2px, transparent 2px);
+      background-size: 20px 20px;
+      background-position: 0 0;
+    }
+    
+    .comic-footer {
+      background: linear-gradient(45deg, #2C3E50, #34495E);
+      border-top: 6px solid #F39C12;
+      position: relative;
+    }
+    
+    .comic-footer::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: repeating-linear-gradient(
+        90deg,
+        #F39C12,
+        #F39C12 20px,
+        #E74C3C 20px,
+        #E74C3C 40px
+      );
+    }
+    
+    .comic-error {
+      background: #FFE5E5;
+      border: 4px solid #E74C3C;
+      border-radius: 15px;
+      box-shadow: 0 4px 0 #C0392B;
+    }
+    
+    .pow-effect {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .pow-effect::after {
+      content: '💥';
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      font-size: 24px;
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-10px);
+      }
+      60% {
+        transform: translateY(-5px);
+      }
+    }
+    
+    .zig-zag {
+      background-image: linear-gradient(45deg, transparent 30%, #FFC107 30%, #FFC107 70%, transparent 70%);
+      background-size: 10px 10px;
+    }
+
+    /* Print-specific styles */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #comic-container, #comic-container * {
+        visibility: visible;
+      }
+      #comic-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        border: none;
+        box-shadow: none;
+      }
+      #download-btn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="comic-bg min-h-screen comic-dots">
+  <div class="container mx-auto px-4 py-8">
+    <header class="text-center mb-12">
+      <h1 class="text-6xl font-bold comic-title text-gray-700 text-shadow-lg mb-4">AI COMIC STORY CREATOR</h1>
+      <div class="comic-speech-bubble inline-block">
+        <p class="text-lg comic-subtitle">Transform your creative prompts into fully illustrated comic stories!</p>
+      </div>
+    </header>
+
+    <div class="max-w-3xl mx-auto comic-form p-8 mb-8 pow-effect">
+      <div class="mb-6">
+        <label for="prompt" class="block text-lg font-bold comic-label mb-3">YOUR COMIC IDEA</label>
+        <textarea id="prompt" rows="3" class="w-full px-4 py-3 comic-input text-lg" placeholder="A superhero dog who saves cats from trees but is secretly afraid of heights..."></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div>
+          <label for="genre" class="block text-lg font-bold comic-label mb-3">GENRE</label>
+          <select id="genre" class="w-full px-4 py-3 comic-input text-lg">
+            <option value="superhero">Superhero</option>
+            <option value="fantasy">Fantasy</option>
+            <option value="sci-fi">Sci-Fi</option>
+            <option value="romance">Romance</option>
+            <option value="comedy">Comedy</option>
+            <option value="horror">Horror</option>
+            <option value="mystery">Mystery</option>
+            <option value="action">Action</option>
+            <option value="adventure">Adventure</option>
+            <option value="historical">Historical</option>
+            <option value="crime">Crime</option>
+            <option value="thriller">Thriller</option>
+            <option value="biographical">Biographical</option>
+            <option value="informative">Informative</option>
+            <option value="cyberpunk">Cyberpunk</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="panels" class="block text-lg font-bold comic-label mb-3">PANELS</label>
+          <select id="panels" class="w-full px-4 py-3 comic-input text-lg">
+            <option value="4">4</option>
+            <option value="6" selected>6</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="art-style" class="block text-lg font-bold comic-label mb-3">ART STYLE</label>
+          <select id="art-style" class="w-full px-4 py-3 comic-input text-lg">
+            <option value="anime">Anime</option>
+            <option value="ghibli">Ghibli</option>
+            <option value="american superhero">American Superhero</option>
+            <option value="manga">Manga</option>
+            <option value="chibi">Chibi</option>
+            <option value="retro">Retro</option>
+            <option value="bande dessinee">Bande Dessinée</option>
+            <option value="painterly">Painterly</option>
+            <option value="anthropomorphic">Anthropomorphic</option>
+            <option value="minimalist">Minimalist</option>
+            <option value="webtoon">Webtoon</option>
+            <option value="sketchbook">Sketchbook</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="tone" class="block text-lg font-bold comic-label mb-3">TONE</label>
+          <select id="tone" class="w-full px-4 py-3 comic-input text-lg">
+            <option value="light-hearted">Light-hearted</option>
+            <option value="serious">Serious</option>
+            <option value="dark">Dark</option>
+            <option value="humorous">Humorous</option>
+            <option value="dramatic">Dramatic</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="word-length" class="block text-lg font-bold comic-label mb-3">WORD LENGTH</label>
+          <select id="word-length" class="w-full px-4 py-3 comic-input text-lg">
+            <option value="short">Short (5–10 words)</option>
+            <option value="medium" selected>Medium (10–20 words)</option>
+            <option value="long">Long (20–30 words)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="tone-ending" class="block text-lg font-bold comic-label mb-3">ENDING TONE</label>
+          <select id="tone-ending" class="w-full px-4 py-3 comic-input text-lg">
+            <option value="happy">Happy</option>
+            <option value="bittersweet">Bittersweet</option>
+            <option value="tragic">Tragic</option>
+            <option value="surprise">Surprise Twist</option>
+            <option value="open-ended">Open-ended</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex justify-center">
+        <button id="generate-btn" class="px-8 py-4 comic-button text-white font-bold text-2xl flex items-center">
+          <span>GENERATE COMIC!</span>
+          <svg id="loading-spinner" class="hidden loading-spinner h-6 w-6 ml-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="comic-container" class="hidden max-w-4xl mx-auto comic-container p-8 mb-8">
+  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8">
+  <h2 id="comic-title" class="text-3xl font-bold text-gray-800 comic-title" style="font-family: 'Bangers', cursive; color: #2C3E50; text-shadow: 2px 2px 0px #F39C12;"></h2>
+  <div class="flex gap-2 mt-5 sm:mt-0">
+    <button id="download-btn" class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg comic-button" style="background: linear-gradient(45deg, #27AE60, #2ECC71);">
+      DOWNLOAD COMIC
+    </button>
+  </div>
+</div>
+      <div id="comic-description" class="text-gray-700 mb-8 text-lg" style="font-family: 'Comic Sans MS', cursive;"></div>
+      <div id="comic-panels" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
+    </div>
+
+    <div id="error-message" class="hidden max-w-3xl mx-auto comic-error p-6 mb-8">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-8 w-8 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p id="error-text" class="text-lg text-red-700 font-bold" style="font-family: 'Bangers', cursive;"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="comic-footer text-white py-8 zig-zag">
+    <div class="container mx-auto px-4 text-center">
+      <p class="text-xl text-gray-700 font" style="font-family: 'Bangers', cursive;">AI COMIC STORY CREATOR - Developed by <span class="underline font-bold">Rana Yashraj Singh Solanki</span> & Team codeblaze (Yashika Chaturvedi, Sheetal Pandey, Tushar Chouhan) </p>
+    </div>
+  </footer>
+
+  <script>
+    // Download functionality using html2canvas
+   document.getElementById('download-btn').addEventListener('click', async () => {
+  const node = document.getElementById('comic-container');
+  const comicTitle = document.getElementById('comic-title')?.textContent?.trim() || 'comic';
+  
+  if (!node) {
+    alert('No comic to download. Please generate a comic first.');
+    return;
+  }
+
+  try {
+    // Show loading state
+    const originalText = document.getElementById('download-btn').textContent;
+    document.getElementById('download-btn').innerHTML = '<span>Generating Image...</span>';
+    document.getElementById('download-btn').disabled = true;
+
+    // Temporarily hide the download button
+    const downloadBtn = document.getElementById('download-btn');
+    const originalDisplay = downloadBtn.style.display;
+    downloadBtn.style.display = 'none';
+
+    // Create canvas
+    const canvas = await html2canvas(node, {
+      scale: 2,
+      backgroundColor: '#F8F8F8',
+      allowTaint: true,
+      useCORS: true,
+      logging: true,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: node.scrollWidth,
+      windowHeight: node.scrollHeight
+    });
+
+    // Restore the download button
+    downloadBtn.style.display = originalDisplay;
+
+    // Convert to image and download
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `${comicTitle.replace(/\s+/g, '_')}.png`;
+    link.href = dataUrl;
+    link.click();
+
+  } catch (err) {
+    console.error('Download failed:', err);
+    alert('Failed to download comic. Please try again.');
+  } finally {
+    // Reset button state
+    if (document.getElementById('download-btn')) {
+      document.getElementById('download-btn').innerHTML = originalText;
+      document.getElementById('download-btn').disabled = false;
+    }
+  }
+});
+  </script>
+</body>
+</html>
