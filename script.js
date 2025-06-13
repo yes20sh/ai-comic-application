@@ -27,7 +27,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     return;
   }
 
-  const API_KEY = 'AIzaSyD7kdn9AA4sdYifzQmI5h1MPE2Ve9CwZZY'; // ⚠️ Replace with environment-safe variable in production
+  const API_KEY = 'AIzaSyBOKY4RzIVCHrbchLMk-AXcDznOgLomNLg'; // ⚠️ Replace with environment-safe variable in production
   const model = 'gemini-2.0-flash-preview-image-generation';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
 
